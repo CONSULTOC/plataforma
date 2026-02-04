@@ -124,3 +124,28 @@ async def criar_checkout(plano: str):
         return {"url": session.url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+        from fastapi import Request
+
+@app.post("/webhook-stripe")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET") # Adicione esta chave no seu .env
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Payload inválido")
+    except stripe.error.SignatureVerificationError as e:
+        raise HTTPException(status_code=400, detail="Assinatura inválida")
+
+    # Lógica quando o pagamento é confirmado
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        # Aqui você pode salvar no PostgreSQL que o cliente está 'Ativo'
+        print(f"Pagamento aprovado para: {session.customer_email}")
+
+    return {"status": "success"}
+
