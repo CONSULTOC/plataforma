@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-multipart
+stripe
+reportlab
+pandas
+scikit-learn
+beautifulsoup4
+requests
+python-jose[cryptography]
+passlib[bcrypt]
