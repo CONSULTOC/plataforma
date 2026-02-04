@@ -148,4 +148,32 @@ async def stripe_webhook(request: Request):
         print(f"Pagamento aprovado para: {session.customer_email}")
 
     return {"status": "success"}
+    # Adicione esta função ao final do seu main.py
+def enviar_email_boas_vindas(email_destino):
+    # Aqui você integraria com SendGrid ou Gmail API
+    # Por enquanto, deixaremos o log para você verificar na VPS
+    print(f"📧 E-mail de boas-vindas enviado para: {email_destino}")
+
+# Atualize o seu Webhook para chamar a função
+@app.post("/webhook-stripe")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        email_cliente = session.get("customer_details", {}).get("email")
+        
+        # 1. Libera o acesso no seu PostgreSQL 17
+        # 2. Dispara o e-mail automático
+        enviar_email_boas_vindas(email_cliente)
+
+    return {"status": "success"}
+
 
