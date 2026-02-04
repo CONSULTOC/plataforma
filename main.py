@@ -48,7 +48,7 @@ def get_db():
 def enviar_email_boas_vindas(email_destino):
     print(f"📧 E-mail de boas-vindas enviado para: {email_destino}")
 
-# --- ROTAS ---
+# --- ROTAS DA CONSULTOC ---
 
 @app.get("/")
 def home():
@@ -97,7 +97,7 @@ async def criar_checkout(plano: str):
                     'currency': 'brl',
                     'product_data': {'name': f'Assinatura Consultoc - {plano.capitalize()}'},
                     'unit_amount': precos[plano],
-                    recurring={'interval': 'month'},
+                    'recurring': {'interval': 'month'},
                 },
                 'quantity': 1,
             }],
