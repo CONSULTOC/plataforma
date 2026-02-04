@@ -45,24 +45,15 @@ def get_db():
     finally:
         db.close()
 
-def enviar_email_boas_vindas(email_destino):
-    print(f"📧 E-mail de boas-vindas enviado para: {email_destino}")
-
 # --- ROTAS ---
 
 @app.get("/")
 def home():
     return {"status": "online", "plataforma": "Consultoc", "versao": "1.5-pro"}
 
-@app.get("/test-db")
-def test_db():
-    try:
-        with engine.connect() as connection:
-            result = connection.execute(text("SELECT version();"))
-            version = result.fetchone()
-            return {"database": "Conectado com Sucesso", "versao": version[0]}
-    except Exception as e:
-        return {"database": "Erro", "detalhes": str(e)}
+@app.get("/avaliacoes")
+def listar_avaliacoes(db: Session = Depends(get_db)):
+    return db.query(Avaliacao).order_by(Avaliacao.created_at.desc()).all()
 
 @app.post("/avaliar")
 async def salvar_avaliacao(dados: dict, db: Session = Depends(get_db)):
@@ -80,15 +71,9 @@ async def salvar_avaliacao(dados: dict, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/avaliacoes")
-def listar_avaliacoes(db: Session = Depends(get_db)):
-    return db.query(Avaliacao).order_by(Avaliacao.created_at.desc()).all()
-
 @app.post("/criar-checkout")
 async def criar_checkout(plano: str):
     precos = {"starter": 19900, "pro": 59900}
-    if plano not in precos:
-        raise HTTPException(status_code=400, detail="Plano inválido")
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -116,10 +101,6 @@ async def stripe_webhook(request: Request):
     endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-        if event['type'] == 'checkout.session.completed':
-            session = event['data']['object']
-            email_cliente = session.get("customer_details", {}).get("email")
-            enviar_email_boas_vindas(email_cliente)
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
