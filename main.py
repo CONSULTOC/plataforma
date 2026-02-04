@@ -12,12 +12,11 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 stripe.api_key = STRIPE_SECRET_KEY
 
-# 2. Configuração do Banco de Dados (Estável PostgreSQL 17)
+# 2. Configuração do Banco de Dados
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Modelo de Dados para Avaliações (Sincronizado com o Dashboard)
 class Avaliacao(Base):
     __tablename__ = "avaliacoes"
     id = Column(String, primary_key=True, index=True)
@@ -27,13 +26,11 @@ class Avaliacao(Base):
     status = Column(String, default="Pendente")
     created_at = Column(DateTime, default=datetime.utcnow)
 
-# Criação das tabelas no Railway
 Base.metadata.create_all(bind=engine)
 
 # 3. Inicialização da API
 app = FastAPI(title="Consultoc Intelligence API")
 
-# Habilita CORS para sua Landing Page e Dashboard
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -41,7 +38,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Dependência do Banco
 def get_db():
     db = SessionLocal()
     try:
@@ -49,11 +45,10 @@ def get_db():
     finally:
         db.close()
 
-# Função auxiliar para e-mail
 def enviar_email_boas_vindas(email_destino):
     print(f"📧 E-mail de boas-vindas enviado para: {email_destino}")
 
-# --- ROTAS DA API ---
+# --- ROTAS ---
 
 @app.get("/")
 def home():
@@ -65,11 +60,7 @@ def test_db():
         with engine.connect() as connection:
             result = connection.execute(text("SELECT version();"))
             version = result.fetchone()
-            return {
-                "database": "Conectado com Sucesso",
-                "versao": version[0],
-                "status": "Pronto para salvar dados"
-            }
+            return {"database": "Conectado", "versao": version[0]}
     except Exception as e:
         return {"database": "Erro", "detalhes": str(e)}
 
@@ -85,15 +76,13 @@ async def salvar_avaliacao(dados: dict, db: Session = Depends(get_db)):
         )
         db.add(nova_av)
         db.commit()
-        return {"message": "Avaliação registrada com sucesso!", "id": nova_av.id}
+        return {"message": "Sucesso", "id": nova_av.id}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/avaliacoes")
 def listar_avaliacoes(db: Session = Depends(get_db)):
     return db.query(Avaliacao).order_by(Avaliacao.created_at.desc()).all()
-
-# --- ROTAS DE PAGAMENTO (STRIPE) ---
 
 @app.post("/criar-checkout")
 async def criar_checkout(plano: str):
@@ -125,15 +114,12 @@ async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
     endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
-
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            email_cliente = session.get("customer_details", {}).get("email")
+            enviar_email_boas_vindas(email_cliente)
+        return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        email_cliente = session.get("customer_details", {}).get("email")
-        enviar_email_boas_vindas(email_cliente)
-
-    return {"status": "success"}
