@@ -17,7 +17,7 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Modelo de Dados para Avaliações
+# Modelo de Dados para Avaliações (Sincronizado com o Dashboard)
 class Avaliacao(Base):
     __tablename__ = "avaliacoes"
     id = Column(String, primary_key=True, index=True)
@@ -49,7 +49,7 @@ def get_db():
     finally:
         db.close()
 
-# Função auxiliar de e-mail (Log na VPS)
+# Função auxiliar para e-mail
 def enviar_email_boas_vindas(email_destino):
     print(f"📧 E-mail de boas-vindas enviado para: {email_destino}")
 
@@ -97,10 +97,7 @@ def listar_avaliacoes(db: Session = Depends(get_db)):
 
 @app.post("/criar-checkout")
 async def criar_checkout(plano: str):
-    precos = {
-        "starter": 19900,
-        "pro": 59900
-    }
+    precos = {"starter": 19900, "pro": 59900}
     if plano not in precos:
         raise HTTPException(status_code=400, detail="Plano inválido")
     try:
@@ -109,7 +106,7 @@ async def criar_checkout(plano: str):
             line_items=[{
                 'price_data': {
                     'currency': 'brl',
-                    'product_data': {'name': f'Assinatura Consultoc API - {plano.capitalize()}'},
+                    'product_data': {'name': f'Assinatura Consultoc - {plano.capitalize()}'},
                     'unit_amount': precos[plano],
                     'recurring': {'interval': 'month'},
                 },
@@ -137,7 +134,6 @@ async def stripe_webhook(request: Request):
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         email_cliente = session.get("customer_details", {}).get("email")
-        # Aqui você pode adicionar lógica para liberar acesso no DB
         enviar_email_boas_vindas(email_cliente)
 
     return {"status": "success"}
