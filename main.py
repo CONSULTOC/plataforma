@@ -48,7 +48,7 @@ def get_db():
 def enviar_email_boas_vindas(email_destino):
     print(f"📧 E-mail de boas-vindas enviado para: {email_destino}")
 
-# --- ROTAS DA CONSULTOC ---
+# --- ROTAS ---
 
 @app.get("/")
 def home():
@@ -60,7 +60,7 @@ def test_db():
         with engine.connect() as connection:
             result = connection.execute(text("SELECT version();"))
             version = result.fetchone()
-            return {"database": "Conectado", "versao": version[0]}
+            return {"database": "Conectado com Sucesso", "versao": version[0]}
     except Exception as e:
         return {"database": "Erro", "detalhes": str(e)}
 
