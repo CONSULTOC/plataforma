@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text, Column, String, Float, DateTime, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -175,5 +175,6 @@ async def stripe_webhook(request: Request):
         enviar_email_boas_vindas(email_cliente)
 
     return {"status": "success"}
+
 
 
