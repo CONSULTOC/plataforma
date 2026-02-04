@@ -17,7 +17,7 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Modelo de Dados para Avaliações (Sincronizado com o Dashboard)
+# Modelo de Dados para Avaliações
 class Avaliacao(Base):
     __tablename__ = "avaliacoes"
     id = Column(String, primary_key=True, index=True)
@@ -49,7 +49,11 @@ def get_db():
     finally:
         db.close()
 
-# --- ROTAS DE STATUS E TESTE ---
+# Função auxiliar de e-mail (Log na VPS)
+def enviar_email_boas_vindas(email_destino):
+    print(f"📧 E-mail de boas-vindas enviado para: {email_destino}")
+
+# --- ROTAS DA API ---
 
 @app.get("/")
 def home():
@@ -69,8 +73,6 @@ def test_db():
     except Exception as e:
         return {"database": "Erro", "detalhes": str(e)}
 
-# --- ROTAS DE NEGÓCIO (AVALIAÇÃO) ---
-
 @app.post("/avaliar")
 async def salvar_avaliacao(dados: dict, db: Session = Depends(get_db)):
     try:
@@ -78,7 +80,7 @@ async def salvar_avaliacao(dados: dict, db: Session = Depends(get_db)):
             id=str(datetime.timestamp(datetime.now())),
             endereco=dados.get("endereco"),
             area_util=float(dados.get("area")),
-            valor_estimado=float(dados.get("area")) * 5500, # Lógica simplificada de mercado
+            valor_estimado=float(dados.get("area")) * 5500,
             status="Pendente"
         )
         db.add(nova_av)
@@ -89,22 +91,18 @@ async def salvar_avaliacao(dados: dict, db: Session = Depends(get_db)):
 
 @app.get("/avaliacoes")
 def listar_avaliacoes(db: Session = Depends(get_db)):
-    # Rota que alimenta o Dashboard Administrativo
     return db.query(Avaliacao).order_by(Avaliacao.created_at.desc()).all()
 
 # --- ROTAS DE PAGAMENTO (STRIPE) ---
 
 @app.post("/criar-checkout")
 async def criar_checkout(plano: str):
-    # Preços definidos conforme os planos da Landing Page
     precos = {
-        "starter": 19900,  # R$ 199,00
-        "pro": 59900       # R$ 599,00
+        "starter": 19900,
+        "pro": 59900
     }
-    
     if plano not in precos:
         raise HTTPException(status_code=400, detail="Plano inválido")
-
     try:
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -124,37 +122,7 @@ async def criar_checkout(plano: str):
         return {"url": session.url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-        from fastapi import Request
 
-@app.post("/webhook-stripe")
-async def stripe_webhook(request: Request):
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET") # Adicione esta chave no seu .env
-
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="Payload inválido")
-    except stripe.error.SignatureVerificationError as e:
-        raise HTTPException(status_code=400, detail="Assinatura inválida")
-
-    # Lógica quando o pagamento é confirmado
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        # Aqui você pode salvar no PostgreSQL que o cliente está 'Ativo'
-        print(f"Pagamento aprovado para: {session.customer_email}")
-
-    return {"status": "success"}
-    # Adicione esta função ao final do seu main.py
-def enviar_email_boas_vindas(email_destino):
-    # Aqui você integraria com SendGrid ou Gmail API
-    # Por enquanto, deixaremos o log para você verificar na VPS
-    print(f"📧 E-mail de boas-vindas enviado para: {email_destino}")
-
-# Atualize o seu Webhook para chamar a função
 @app.post("/webhook-stripe")
 async def stripe_webhook(request: Request):
     payload = await request.body()
@@ -169,12 +137,7 @@ async def stripe_webhook(request: Request):
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         email_cliente = session.get("customer_details", {}).get("email")
-        
-        # 1. Libera o acesso no seu PostgreSQL 17
-        # 2. Dispara o e-mail automático
+        # Aqui você pode adicionar lógica para liberar acesso no DB
         enviar_email_boas_vindas(email_cliente)
 
     return {"status": "success"}
-
-
-
