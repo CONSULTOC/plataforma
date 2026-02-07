@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Painel Consultoc | Gestão de Avaliações</title>
+<style>
+body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 40px; }
+.container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+h1 { color: #1a2a6c; border-bottom: 2px solid #b21f1f; padding-bottom: 10px; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th { background: #1a2a6c; color: white; padding: 12px; text-align: left; }
+td { padding: 12px; border-bottom: 1px solid #eee; color: #444; }
+.status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+.status-pendente { background: #fff3cd; color: #856404; }
+.btn-update { background: #1a2a6c; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; float: right; }
+</style>
+</head>
+<body>
+
+<div class="container">
+<button class="btn-update" onclick="carregarDados()">Atualizar Lista</button>
+<h1>📋 Gestão de Avaliações</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Endereço</th>
+            <th>Área (m²)</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody id="tabela-corpo">
+        <tr><td colspan="4" style="text-align:center">Carregando dados...</td></tr>
+    </tbody>
+</table>
+
+
+</div>
+
+<script>
+async function carregarDados() {
+const corpo = document.getElementById('tabela-corpo');
+try {
+// Chamada para a sua API segura
+const res = await fetch('https://api.consultoc.com.br/avaliacoes');
+const dados = await res.json();
+
+    corpo.innerHTML = &quot;&quot;;
+    
+    if (dados.length === 0) {
+        corpo.innerHTML = &quot;&lt;tr&gt;&lt;td colspan=&#39;4&#39; style=&#39;text-align:center&#39;&gt;Nenhuma avaliação encontrada.&lt;/td&gt;&lt;/tr&gt;&quot;;
+        return;
+    }
+
+    dados.forEach(item =&gt; {
+        const data = new Date(item.created_at).toLocaleDateString(&#39;pt-BR&#39;);
+        corpo.innerHTML += `
+            &lt;tr&gt;
+                &lt;td&gt;${data}&lt;/td&gt;
+                &lt;td&gt;${item.endereco}&lt;/td&gt;
+                &lt;td&gt;${item.area_util}&lt;/td&gt;
+                &lt;td&gt;&lt;span class=&quot;status-badge status-pendente&quot;&gt;${item.status}&lt;/span&gt;&lt;/td&gt;
+            &lt;/tr&gt;
+        `;
+    });
+} catch (e) {
+    corpo.innerHTML = &quot;&lt;tr&gt;&lt;td colspan=&#39;4&#39; style=&#39;text-align:center; color:red&#39;&gt;Erro ao conectar com a API. Verifique o servidor.&lt;/td&gt;&lt;/tr&gt;&quot;;
+}
+
+
+}
+
+// Carrega ao abrir a página
+carregarDados();
+</script>
+
+</body>
+</html>

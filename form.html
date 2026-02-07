@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avaliação Imobiliária - Consultoc</title>
+</head>
+<body style="background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
+
+<div id="consultoc-app" style="font-family: 'Segoe UI', sans-serif; max-width: 450px; width: 90%; padding: 30px; border-radius: 15px; background: #ffffff; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+    <h2 style="color: #1a2a6c; margin-bottom: 10px; text-align: center;">Avaliação Imobiliária Inteligente</h2>
+    <p style="color: #666; font-size: 14px; text-align: center; margin-bottom: 25px;">Tecnologia Igrtech para laudos precisos.</p>
+    
+    <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Endereço do Imóvel:</label>
+        <input type="text" id="end_imovel" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;" placeholder="Ex: Rua das Flores, 123">
+    </div>
+    
+    <div style="margin-bottom: 25px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Área Útil (m²):</label>
+        <input type="number" id="area_imovel" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;" placeholder="Ex: 120">
+    </div>
+    
+    <button onclick="gerarLaudo()" id="btn-gerar" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 100%); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px;">
+        Solicitar Avaliação Agora
+    </button>
+    
+    <div id="status-envio" style="margin-top: 20px; text-align: center; font-size: 14px; min-height: 20px;"></div>
+</div>
+
+<script>
+async function gerarLaudo() {
+    const endereco = document.getElementById('end_imovel').value;
+    const area = document.getElementById('area_imovel').value;
+    const btn = document.getElementById('btn-gerar');
+    const status = document.getElementById('status-envio');
+
+    if(!endereco || !area) {
+        status.style.color = "#e67e22";
+        status.innerHTML = "⚠️ Por favor, preencha todos os campos.";
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = "Processando Inteligência...";
+    status.innerHTML = "⌛ Conectando ao servidor...";
+
+    try {
+        // Usamos caminho relativo '/avaliar' para garantir que o navegador não bloqueie a conexão SSL/CORS
+        const res = await fetch('/avaliar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endereco, area: parseFloat(area) })
+        });
+        
+        if(res.ok) {
+            status.style.color = "#27ae60";
+            status.innerHTML = "✅ Sucesso! O seu laudo está a ser gerado.";
+            document.getElementById('end_imovel').value = "";
+            document.getElementById('area_imovel').value = "";
+        } else {
+            const errorData = await res.json();
+            throw new Error(errorData.detail || "Erro no servidor");
+        }
+    } catch (e) {
+        console.error("Erro técnico Consultoc:", e);
+        status.style.color = "#c0392b";
+        status.innerHTML = "❌ Erro na ligação. Verifique se o motor da API está ligado.";
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = "Solicitar Avaliação Agora";
+    }
+}
+</script>
+
+</body>
+</html>
