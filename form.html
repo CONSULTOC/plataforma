@@ -4,68 +4,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Avaliação Imobiliária - Consultoc</title>
+    <style>
+        :root {
+            --primary: #1a2a6c;
+            --accent: #b21f1f;
+            --success: #27ae60;
+            --error: #c0392b;
+        }
+        body { background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { max-width: 450px; width: 90%; padding: 40px; border-radius: 20px; background: #ffffff; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h2 { color: var(--primary); margin: 0; }
+        .header p { color: #666; font-size: 0.9em; margin-top: 5px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #444; }
+        input { width: 100%; padding: 14px; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; transition: border-color 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; }
+        button { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; transition: transform 0.2s, opacity 0.2s; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #status-envio { margin-top: 20px; text-align: center; font-size: 14px; font-weight: 500; }
+    </style>
 </head>
-<body style="background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
+<body>
 
-<div id="consultoc-app" style="font-family: 'Segoe UI', sans-serif; max-width: 450px; width: 90%; padding: 30px; border-radius: 15px; background: #ffffff; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-    <h2 style="color: #1a2a6c; margin-bottom: 10px; text-align: center;">Avaliação Imobiliária Inteligente</h2>
-    <p style="color: #666; font-size: 14px; text-align: center; margin-bottom: 25px;">Tecnologia Igrtech para laudos precisos.</p>
-    
-    <div style="margin-bottom: 15px;">
-        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Endereço do Imóvel:</label>
-        <input type="text" id="end_imovel" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;" placeholder="Ex: Rua das Flores, 123">
+<div class="card" id="consultoc-app">
+    <div class="header">
+        <h2>Avaliação Inteligente</h2>
+        <p>Tecnologia <strong>Consultoc</strong> para laudos imediatos.</p>
     </div>
     
-    <div style="margin-bottom: 25px;">
-        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Área Útil (m²):</label>
-        <input type="number" id="area_imovel" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;" placeholder="Ex: 120">
+    <div class="form-group">
+        <label for="end_imovel">Endereço do Imóvel:</label>
+        <input type="text" id="end_imovel" placeholder="Rua, número, bairro e cidade">
     </div>
     
-    <button onclick="gerarLaudo()" id="btn-gerar" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 100%); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px;">
-        Solicitar Avaliação Agora
-    </button>
+    <div class="form-group">
+        <label for="area_imovel">Área Útil (m²):</label>
+        <input type="number" id="area_imovel" placeholder="Ex: 85.5">
+    </div>
     
-    <div id="status-envio" style="margin-top: 20px; text-align: center; font-size: 14px; min-height: 20px;"></div>
+    <button onclick="gerarLaudo()" id="btn-gerar">Solicitar Avaliação Agora</button>
+    
+    <div id="status-envio"></div>
 </div>
 
 <script>
 async function gerarLaudo() {
-    const endereco = document.getElementById('end_imovel').value;
+    const endereco = document.getElementById('end_imovel').value.trim();
     const area = document.getElementById('area_imovel').value;
     const btn = document.getElementById('btn-gerar');
     const status = document.getElementById('status-envio');
 
     if(!endereco || !area) {
         status.style.color = "#e67e22";
-        status.innerHTML = "⚠️ Por favor, preencha todos os campos.";
+        status.innerHTML = "⚠️ Preencha todos os dados corretamente.";
         return;
     }
 
     btn.disabled = true;
-    btn.innerHTML = "Processando Inteligência...";
-    status.innerHTML = "⌛ Conectando ao servidor...";
+    btn.innerHTML = "Processando IA...";
+    status.innerHTML = "⌛ Analisando mercado...";
 
     try {
-        // Usamos caminho relativo '/avaliar' para garantir que o navegador não bloqueie a conexão SSL/CORS
         const res = await fetch('/avaliar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ endereco, area: parseFloat(area) })
         });
         
+        const data = await res.json();
+
         if(res.ok) {
-            status.style.color = "#27ae60";
-            status.innerHTML = "✅ Sucesso! O seu laudo está a ser gerado.";
+            status.style.color = "var(--success)";
+            status.innerHTML = `✅ Sucesso! Estimativa: R$ ${data.valor_estimado.toLocaleString('pt-BR')}`;
             document.getElementById('end_imovel').value = "";
             document.getElementById('area_imovel').value = "";
         } else {
-            const errorData = await res.json();
-            throw new Error(errorData.detail || "Erro no servidor");
+            throw new Error(data.detail || "Erro no processamento");
         }
     } catch (e) {
-        console.error("Erro técnico Consultoc:", e);
-        status.style.color = "#c0392b";
-        status.innerHTML = "❌ Erro na ligação. Verifique se o motor da API está ligado.";
+        status.style.color = "var(--error)";
+        status.innerHTML = `❌ Erro: ${e.message}`;
     } finally {
         btn.disabled = false;
         btn.innerHTML = "Solicitar Avaliação Agora";
