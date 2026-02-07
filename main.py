@@ -93,7 +93,7 @@ async def salvar_avaliacao(dados: dict, db: Session = Depends(get_db)):
 
 @app.get("/avaliacoes")
 def listar_avaliacoes(db: Session = Depends(get_db)):
-    return db.query(Avaliacao).order_by(Avaliacao.created_at.desc()).all()
+    return db.query(Avaliacao).all()
 
 @app.post("/webhook-stripe")
 async def stripe_webhook(request: Request):
@@ -112,3 +112,4 @@ async def stripe_webhook(request: Request):
         enviar_email_boas_vindas(email_cliente)
 
     return {"status": "success"}
+
